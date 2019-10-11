@@ -6,6 +6,7 @@
 package com.cripto.main;
 
 import com.cripto.utils.Utils;
+import java.util.Arrays;
 
 /**
  *
@@ -17,10 +18,10 @@ public class LUOV {
         String private_seed = Utils.generatePrivateSeed();
         String public_seed = Utils.generatePublicSeed(private_seed);
         String T = Utils.generateT(private_seed);
-        System.out.println("Private seed: " + private_seed);
-        System.out.println("Public seed: " + public_seed);
+        //System.out.println("Private seed: " + private_seed);
+        //System.out.println("Public seed: " + public_seed);
         //System.out.println("T: " + T);
-        //System.out.println(T.length());
+        //Utils.getTMatrix(T);
     }
     
 }
