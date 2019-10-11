@@ -1,8 +1,10 @@
 
-package com.cripto.utils;
+package com.cripto.luov;
 
+import com.cripto.utils.KeyPair;
 import java.math.BigInteger;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 import org.bouncycastle.crypto.engines.AESEngine;
@@ -11,25 +13,58 @@ import org.bouncycastle.crypto.engines.DESEngine;
 import org.bouncycastle.crypto.params.DESParameters;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.crypto.params.ParametersWithIV;
+import org.bouncycastle.pqc.math.linearalgebra.GF2mField;
 import org.bouncycastle.util.encoders.Hex;
 
 /**
- *
+ * LUOV Cryptosystem Class
  * @author Eduardo Angulo
+ * @author Sebastián Cabarcas
+ * @author Andrés Duarte
+ * @author Jorge Pinzón
  */
-public class Utils {
+public class LUOV {
     
     //Parameters
     public static final int FIELD = 7;
     public static final int OIL_VAR = 57;
     public static final int VINEGAR_VAR = 197;
     
+    private KeyPair keyPair;
+    
+    /**
+     * Constructor Method
+     */
+    public LUOV() {
+        this.keyPair = new KeyPair();
+    }
+    
+    /**
+     * Generates a Key Pair (Private Key, Public Key).
+     * @throws java.lang.Exception
+     */
+    public void keyGen() throws Exception {
+        String private_seed = generatePrivateSeed();
+        String public_seed = generatePublicSeed(private_seed);
+        String T = generateT(private_seed);
+        ArrayList<String> CLQ1 = generateCLQ1(public_seed);
+        String Q2 = packQ2(findQ2(CLQ1.get(2), T));
+        this.keyPair = new KeyPair(private_seed, public_seed, Q2);
+    }
+    
+    /**
+     * Print the Key Pair (Private Key, Public Key).
+     */
+    public void printKeyPair() {
+        System.out.println(keyPair.toString());
+    }
+    
     /**
      * Generates a pseudo random private key for LUOV cryptosystem.
      * @return Hex String corresponding to the Private Seed.
      * @throws java.lang.Exception
      */
-    public static String generatePrivateSeed() throws Exception {
+    private String generatePrivateSeed() throws Exception {
         byte[] private_seed = new byte[32];
         SecureRandom.getInstanceStrong().nextBytes(private_seed);
         return Hex.toHexString(private_seed);
@@ -44,7 +79,7 @@ public class Utils {
      * @return Hex String corresponding to the Public Seed.
      * @throws java.lang.Exception 
      */
-    public static String generatePublicSeed(String private_seed) throws Exception {
+    private String generatePublicSeed(String private_seed) throws Exception {
         byte[] initKey = Hex.decode(private_seed);
         DESEngine des = new DESEngine();
         String public_seed = "";
@@ -66,7 +101,7 @@ public class Utils {
      * @return T matrix String.
      * @throws java.lang.Exception 
      */
-    public static String generateT(String private_seed) throws Exception {
+    private String generateT(String private_seed) throws Exception {
         String T = "";
         byte[] initKey = Hex.decode(private_seed);
         byte[] partialKey1 = Arrays.copyOfRange(initKey, 0, 16);
@@ -82,8 +117,8 @@ public class Utils {
             byte[] ciphResult2 = new byte[16];
             aes1.processBlock(ciphData1, 0, ciphResult1, 0);
             aes2.processBlock(ciphData2, 0, ciphResult2, 0);
-            ciphData1 = Arrays.copyOf(ciphResult1, ciphResult1.length); //Se podria cruzar
-            ciphData2 = Arrays.copyOf(ciphResult2, ciphResult2.length); //Se podria cruzar
+            ciphData1 = Arrays.copyOf(ciphResult1, ciphResult1.length);
+            ciphData2 = Arrays.copyOf(ciphResult2, ciphResult2.length);
             ciphResult1[0] = (byte) (Math.abs((int) ciphResult1[0] % 2));
             ciphResult1[8] = (byte) (Math.abs((int) ciphResult1[8] % 2));
             ciphResult2[0] = (byte) (Math.abs((int) ciphResult2[0] % 2));
@@ -109,11 +144,11 @@ public class Utils {
      * @param T Matrix T String in hexagesimal.
      * @return Integer (Binary) T Matrix.
      */
-    public static int[][] getTMatrix(String T) {
+    private int[][] getTMatrix(String T) {
         int[][] T_matrix = new int[VINEGAR_VAR][OIL_VAR];
         for (int i = 0; i < VINEGAR_VAR; i++) {
             String hex = T.substring(16*i, 16*(i+1));
-            String bin = padding((new BigInteger(hex, 16)).toString(2));
+            String bin = padding((new BigInteger(hex, 16)).toString(2), OIL_VAR);
             for (int j = 0; j < OIL_VAR; j++) {
                 T_matrix[i][j] = (int) (bin.charAt(j)) - 48;
             }
@@ -124,11 +159,12 @@ public class Utils {
     /**
      * Make padding of a Binary String with 0s.
      * @param binStr Binary String to be padded.
+     * @param N Lenght to be padded.
      * @return Padded String.
      */
-    public static String padding(String binStr) {
+    private String padding(String binStr, int N) {
         String aux = binStr;
-        while(aux.length() < OIL_VAR) {
+        while(aux.length() < N) {
             aux = "0" + aux;
         }
         return aux;
@@ -137,12 +173,15 @@ public class Utils {
     /**
      * 
      * @param public_seed
+     * @return 
      * @throws java.lang.Exception
      */
-    public static void generateCLQ1(String public_seed) throws Exception {
+    private ArrayList<String> generateCLQ1(String public_seed) throws Exception {
+        ArrayList<String> CLQ1 = new ArrayList<>();
         byte[] initKey = Hex.decode(public_seed);
         ChaChaEngine chacha = new ChaChaEngine();
         chacha.init(true, new ParametersWithIV(new KeyParameter(initKey), new byte[16]));
+        return CLQ1;
     }
     
     /**
@@ -150,7 +189,7 @@ public class Utils {
      * @param C Matrix C String in hexagesimal.
      * @return Integer (GF(2^7) elements) C Vector.
      */
-    public static int[] getCMatrix(String C) {
+    private int[] getCMatrix(String C) {
         int[] C_matrix = new int[OIL_VAR];
         for (int i = 0; i < OIL_VAR; i++) {
             String hex = C.substring(2*i, 2*(i+1));
@@ -164,7 +203,7 @@ public class Utils {
      * @param L Matrix L String in hexagesimal.
      * @return Integer (GF(2^7) elements) L Matrix.
      */
-    public static int[][] getLMatrix(String L) {
+    private int[][] getLMatrix(String L) {
         int N = OIL_VAR + VINEGAR_VAR;
         int[][] L_matrix = new int[OIL_VAR][N];
         for (int i = 0; i < N; i++) {
@@ -179,10 +218,10 @@ public class Utils {
     
     /**
      * Generates a matrix of elements in GF(2^7) from Q1 Hex String.
-     * @param Q1 Matrix C String in hexagesimal.
+     * @param Q1 Matrix Q1 String in hexagesimal.
      * @return Integer (GF(2^7) elements) Q1 Matrix.
      */
-    public static int[][] getQ1Matrix(String Q1) {
+    private int[][] getQ1Matrix(String Q1) {
         int COLUMNS = (VINEGAR_VAR*(VINEGAR_VAR + 1)/2) + (VINEGAR_VAR * OIL_VAR);
         int[][] Q1_matrix = new int[OIL_VAR][COLUMNS];
         for (int i = 0; i < COLUMNS; i++) {
@@ -196,12 +235,12 @@ public class Utils {
     }
     
     /**
-     * 
-     * @param Q1 
-     * @param T 
-     * @return 
+     * Calculates the second part of the quadratic part of the Public Map.
+     * @param Q1 Matrix Q1 Hex String
+     * @param T Matrix T Hex String
+     * @return Q2 Matrix
      */
-    public static int[][] findQ2(String Q1, String T) {
+    private int[][] findQ2(String Q1, String T) {
         int DIM = OIL_VAR*(OIL_VAR + 1)/2;
         int[][] Q1_matrix = getQ1Matrix(Q1);
         int[][] T_matrix = getTMatrix(T);
@@ -209,13 +248,13 @@ public class Utils {
         for (int k = 0; k < OIL_VAR; k++) {
             int[][] Pk1 = findPk1(k, Q1_matrix);
             int[][] Pk2 = findPk2(k, Q1_matrix);
-            int[][] Pk3 = new int[OIL_VAR][OIL_VAR]; //Operacion qlera
+            int[][] Pk3 = findPk3(T_matrix, Pk1, Pk2);
             int column = 0;
             for (int i = 0; i < OIL_VAR; i++) {
                 Q2[k][column] = Pk3[i][i];
                 column++;
                 for (int j = i+1; j < OIL_VAR; j++) {
-                    Q2[k][column] = XOR(Pk3[i][j], Pk3[j][i]); //Pk3[i][j] + Pk3[j][i]???
+                    Q2[k][column] = XOR(Pk3[i][j], Pk3[j][i]);
                     column++;
                 }
             }
@@ -224,12 +263,27 @@ public class Utils {
     }
     
     /**
-     * Find the part of Pk that is quadratic in vinegar variables.
+     * Generates the Hex String of Matrix Q2.
+     * @param Q2 Q2 Matrix
+     * @return Hex String of Q2
+     */
+    private String packQ2(int[][] Q2) {
+        String Q2_hex = "";
+        for (int i = 0; i < Q2.length; i++) {
+            for (int j = 0; j < Q2[0].length; j++) {
+                Q2_hex += padding((new BigInteger("" + Q2[i][j])).toString(16), 2);
+            }
+        }
+        return Q2_hex;
+    }
+    
+    /**
+     * Calculates the part of Pk that is quadratic in vinegar variables.
      * @param k Iteration Number.
      * @param Q1 Integer GF(2^7) Q1 Matrix (Quadratic part of Public Map). 
      * @return Pk part Pk1.
      */
-    public static int[][] findPk1(int k, int[][] Q1) {
+    private int[][] findPk1(int k, int[][] Q1) {
         int[][] Pk1 = new int[VINEGAR_VAR][VINEGAR_VAR];
         int column = 0;
         for (int i = 0; i < VINEGAR_VAR; i++) {
@@ -243,12 +297,12 @@ public class Utils {
     }
     
     /**
-     * Find the part of Pk that is bilinear in vinegar and oil variables.
+     * Calculates the part of Pk that is bilinear in vinegar and oil variables.
      * @param k Iteration Number.
      * @param Q1 Integer GF(2^7) Q1 Matrix (Quadratic part of Public Map).
      * @return Pk part Pk2.
      */
-    public static int[][] findPk2(int k, int[][] Q1) {
+    private int[][] findPk2(int k, int[][] Q1) {
         int[][] Pk2 = new int[VINEGAR_VAR][OIL_VAR];
         int column = 0;
         for (int i = 0; i < VINEGAR_VAR; i++) {
@@ -262,13 +316,79 @@ public class Utils {
     }
     
     /**
+     * Calculates the last part of Pk using the formula
+     * Pk3 = -Tt*Pk1*T + Tt*Pk2 over GF(2^7).
+     * @param T T Matrix.
+     * @param Pk1 Pk1 Matrix.
+     * @param Pk2 Pk2 Matrix.
+     * @return Pk part Pk3.
+     */
+    private int[][] findPk3(int[][] T, int[][] Pk1, int[][] Pk2) {
+        int[][] T_transposed = transposeMatrix(T);
+        int[][] first = matrixMult(matrixMult(T_transposed, Pk1), T);
+        int[][] second = matrixMult(T_transposed, Pk2);
+        int[][] Pk3 = matrixAdd(first, second);
+        return Pk3;
+    }
+    
+    /**
      * Calculates XOR between two numbers x and y.
      * @param x First Integer.
      * @param y Second Integer.
      * @return XOR between x and y.
      */
-    public static int XOR(int x, int y) {
+    private int XOR(int x, int y) {
         return (x | y) & (~x | ~y);
+    }
+    
+    /**
+     * Calculates Matrix XOR Add over GF(2^7).
+     * @param mat1 First Matrix.
+     * @param mat2 Second Matrix.
+     * @return Result Matrix.
+     */
+    private int[][] matrixAdd(int[][] mat1, int[][] mat2) {
+        int[][] result = new int[mat1.length][mat1[0].length];
+        for (int i = 0; i < mat1.length; i++) {
+            for (int j = 0; j < mat1[0].length; j++) {
+                result[i][j] = XOR(mat1[i][j], mat2[i][j]);
+            }
+        }
+        return result;
+    }
+    
+    /**
+     * Calculates Matrix multiplication over GF(2^7).
+     * @param mat1 First Matrix.
+     * @param mat2 Second Matrix.
+     * @return Result Matrix.
+     */
+    private int[][] matrixMult(int[][] mat1, int[][] mat2) {
+        GF2mField field = new GF2mField(FIELD, 131);
+        int[][] result = new int[mat1.length][mat2[0].length];
+        for (int i = 0; i < mat1.length; i++) {
+            for (int j = 0; j < mat2[0].length; j++) {
+                for (int k = 0; k < mat1[0].length; k++) {
+                    result[i][j] = XOR(result[i][j], field.mult(mat1[i][k], mat2[k][j]));
+                }
+            }
+        }
+        return result;
+    }
+    
+    /**
+     * Calculates the transpose of a Matrix.
+     * @param mat Matrix to be transposed.
+     * @return Transposed Matrix.
+     */
+    private int[][] transposeMatrix(int[][] mat) {
+        int[][] result = new int[mat[0].length][mat.length];
+        for (int i = 0; i < mat.length; i++) {
+            for (int j = 0; j < mat[0].length; j++) {
+                result[j][i] = mat[i][j];
+            }
+        }
+        return result;
     }
     
 }
