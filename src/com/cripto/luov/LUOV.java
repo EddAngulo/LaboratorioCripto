@@ -181,7 +181,7 @@ public class LUOV {
      * @return Array that contains C, L, Q1 Hex Strings.
      * @throws java.lang.Exception
      */
-    public ArrayList<String> generateCLQ1(String public_seed) throws Exception {
+    private ArrayList<String> generateCLQ1(String public_seed) throws Exception {
         ArrayList<String> CLQ1 = new ArrayList<>();
         int N = OIL_VAR + VINEGAR_VAR;
         int DIM = (VINEGAR_VAR*(VINEGAR_VAR + 1)/2) + (VINEGAR_VAR * OIL_VAR);
