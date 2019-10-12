@@ -7,6 +7,7 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
+import org.bouncycastle.crypto.digests.SHA512Digest;
 import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.engines.ChaChaEngine;
 import org.bouncycastle.crypto.engines.DESEngine;
@@ -33,7 +34,7 @@ public class LUOV {
     private KeyPair keyPair;
     
     /**
-     * Constructor Method
+     * Constructor Method.
      */
     public LUOV() {
         this.keyPair = new KeyPair();
@@ -41,6 +42,10 @@ public class LUOV {
     
     /**
      * Generates a Key Pair (Private Key, Public Key).
+     * <p>
+     * Private Key = private_seed.
+     * <p>
+     * Public Key = (public_seed, Q2).
      * @throws java.lang.Exception
      */
     public void keyGen() throws Exception {
@@ -171,17 +176,87 @@ public class LUOV {
     }
     
     /**
-     * 
-     * @param public_seed
-     * @return 
+     * Generates a pseudo random C, L, Q1 using Chacha Engine.
+     * @param public_seed Public Seed of LUOV cryptosystem.
+     * @return Array that contains C, L, Q1 Hex Strings.
      * @throws java.lang.Exception
      */
-    private ArrayList<String> generateCLQ1(String public_seed) throws Exception {
+    public ArrayList<String> generateCLQ1(String public_seed) throws Exception {
         ArrayList<String> CLQ1 = new ArrayList<>();
+        int N = OIL_VAR + VINEGAR_VAR;
+        int DIM = (VINEGAR_VAR*(VINEGAR_VAR + 1)/2) + (VINEGAR_VAR * OIL_VAR);
+        String C = "";
+        String L = "";
+        String Q1 = "";
         byte[] initKey = Hex.decode(public_seed);
+        String hash = Hex.toHexString(getHash512(Arrays.copyOf(initKey, initKey.length)));
+        String processHash = hash + hash + hash + hash;
+        byte[] processData = Hex.decode(processHash);
         ChaChaEngine chacha = new ChaChaEngine();
-        chacha.init(true, new ParametersWithIV(new KeyParameter(initKey), new byte[16]));
+        for (int i = 0; i < OIL_VAR; i++) {
+            String nonce = padding("" + i, 8);
+            chacha.init(true, new ParametersWithIV(new KeyParameter(initKey), nonce.getBytes()));
+            byte[] resultData = new byte[512];
+            chacha.processBytes(processData, 0, processData.length, resultData, 0);
+            processData = Arrays.copyOf(resultData, resultData.length);
+            //For C
+            byte[] aux_C = Arrays.copyOfRange(resultData, 0, 1);
+            for (int j = 0; j < aux_C.length; j++) {
+                if(aux_C[j] < 0) {
+                    aux_C[j] = (byte) (128 + aux_C[j]);
+                }
+            }
+            C += Hex.toHexString(aux_C);
+            //For L
+            byte[] aux_L = Arrays.copyOfRange(resultData, 1, N+1);
+            for (int j = 0; j < aux_L.length; j++) {
+                if(aux_L[j] < 0) {
+                    aux_L[j] = (byte) (128 + aux_L[j]);
+                }
+            }
+            L += Hex.toHexString(aux_L);
+            //For Q1
+            byte[] aux_Q1 = Arrays.copyOfRange(resultData, N+1, resultData.length);
+            for (int j = 0; j < aux_Q1.length; j++) {
+                if(aux_Q1[j] < 0) {
+                    aux_Q1[j] = (byte) (128 + aux_Q1[j]);
+                }
+            }
+            Q1 += Hex.toHexString(aux_Q1);
+        }
+        for (int i = OIL_VAR; i < OIL_VAR*(OIL_VAR + 4); i++) {
+            String nonce = padding("" + i, 8);
+            chacha.init(true, new ParametersWithIV(new KeyParameter(initKey), nonce.getBytes()));
+            byte[] resultData = new byte[512];
+            chacha.processBytes(processData, 0, processData.length, resultData, 0);
+            processData = Arrays.copyOf(resultData, resultData.length);
+            //For Q1
+            byte[] aux_Q1 = Arrays.copyOf(resultData, resultData.length);
+            for (int j = 0; j < aux_Q1.length; j++) {
+                if(aux_Q1[j] < 0) {
+                    aux_Q1[j] = (byte) (128 + aux_Q1[j]);
+                }
+            }
+            Q1 += Hex.toHexString(aux_Q1);
+        }
+        Q1 = Q1.substring(0, 2*OIL_VAR*DIM);
+        CLQ1.add(C);
+        CLQ1.add(L);
+        CLQ1.add(Q1);
         return CLQ1;
+    }
+    
+    /**
+     * Create the SHA-512 Hash of given data.
+     * @param data Data to be hashed.
+     * @return Sha512 Hash of data.
+     */
+    private byte[] getHash512(byte[] data) {
+        SHA512Digest digest = new SHA512Digest();
+        digest.update(data, 0, data.length);
+        byte[] result = new byte[64];
+        digest.doFinal(result, 0);
+        return result;
     }
     
     /**
@@ -206,9 +281,9 @@ public class LUOV {
     private int[][] getLMatrix(String L) {
         int N = OIL_VAR + VINEGAR_VAR;
         int[][] L_matrix = new int[OIL_VAR][N];
-        for (int i = 0; i < N; i++) {
+        for (int i = 0; i < OIL_VAR; i++) {
             String row = L.substring(2*N*i, 2*N*(i+1));
-            for (int j = 0; j < OIL_VAR; j++) {
+            for (int j = 0; j < N; j++) {
                 String hex = row.substring(2*j, 2*(j+1));
                 L_matrix[i][j] = (new BigInteger(hex, 16)).intValue();
             }
@@ -224,9 +299,9 @@ public class LUOV {
     private int[][] getQ1Matrix(String Q1) {
         int COLUMNS = (VINEGAR_VAR*(VINEGAR_VAR + 1)/2) + (VINEGAR_VAR * OIL_VAR);
         int[][] Q1_matrix = new int[OIL_VAR][COLUMNS];
-        for (int i = 0; i < COLUMNS; i++) {
+        for (int i = 0; i < OIL_VAR; i++) {
             String row = Q1.substring(2*COLUMNS*i, 2*COLUMNS*(i+1));
-            for (int j = 0; j < OIL_VAR; j++) {
+            for (int j = 0; j < COLUMNS; j++) {
                 String hex = row.substring(2*j, 2*(j+1));
                 Q1_matrix[i][j] = (new BigInteger(hex, 16)).intValue();
             }
@@ -264,8 +339,8 @@ public class LUOV {
     
     /**
      * Generates the Hex String of Matrix Q2.
-     * @param Q2 Q2 Matrix
-     * @return Hex String of Q2
+     * @param Q2 Integer GF(2^7) Q2 Matrix (Quadratic part of Public Map).
+     * @return Hex String of Q2.
      */
     private String packQ2(int[][] Q2) {
         String Q2_hex = "";
@@ -306,7 +381,7 @@ public class LUOV {
         int[][] Pk2 = new int[VINEGAR_VAR][OIL_VAR];
         int column = 0;
         for (int i = 0; i < VINEGAR_VAR; i++) {
-            column += (VINEGAR_VAR - i + 1);
+            column +=  (VINEGAR_VAR - (i+1) + 1);
             for (int j = 0; j < OIL_VAR; j++) {
                 Pk2[i][j] = Q1[k][column];
                 column++;
