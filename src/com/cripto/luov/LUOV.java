@@ -1,6 +1,7 @@
 
 package com.cripto.luov;
 
+import com.cripto.utils.Functions;
 import com.cripto.utils.KeyPair;
 import java.math.BigInteger;
 import java.security.SecureRandom;
@@ -14,7 +15,6 @@ import org.bouncycastle.crypto.engines.DESEngine;
 import org.bouncycastle.crypto.params.DESParameters;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.crypto.params.ParametersWithIV;
-import org.bouncycastle.pqc.math.linearalgebra.GF2mField;
 import org.bouncycastle.util.encoders.Hex;
 
 /**
@@ -33,6 +33,14 @@ public class LUOV {
     
     private KeyPair keyPair;
     
+    private String private_seed;
+    private String public_seed;
+    private String T;
+    private String C;
+    private String L;
+    private String Q1;
+    private String Q2;
+    
     /**
      * Constructor Method.
      */
@@ -49,11 +57,14 @@ public class LUOV {
      * @throws java.lang.Exception
      */
     public void keyGen() throws Exception {
-        String private_seed = generatePrivateSeed();
-        String public_seed = generatePublicSeed(private_seed);
-        String T = generateT(private_seed);
+        this.private_seed = generatePrivateSeed();
+        this.public_seed = generatePublicSeed(private_seed);
+        this.T = generateT(private_seed);
         ArrayList<String> CLQ1 = generateCLQ1(public_seed);
-        String Q2 = packQ2(findQ2(CLQ1.get(2), T));
+        this.C = CLQ1.get(0);
+        this.L = CLQ1.get(1);
+        this.Q1 = CLQ1.get(2);
+        this.Q2 = packQ2(findQ2(Q1, T));
         this.keyPair = new KeyPair(private_seed, public_seed, Q2);
     }
     
@@ -262,15 +273,15 @@ public class LUOV {
     /**
      * Generates a vector of elements in GF(2^7) from C Hex String.
      * @param C Matrix C String in hexagesimal.
-     * @return Integer (GF(2^7) elements) C Vector.
+     * @return Integer (GF(2^7) elements) C Column Vector.
      */
-    private int[] getCMatrix(String C) {
+    private int[][] getCMatrix(String C) {
         int[] C_matrix = new int[OIL_VAR];
         for (int i = 0; i < OIL_VAR; i++) {
             String hex = C.substring(2*i, 2*(i+1));
             C_matrix[i] = (new BigInteger(hex, 16)).intValue();
         }
-        return C_matrix;
+        return Functions.transposeRowVector(C_matrix);
     }
     
     /**
@@ -329,7 +340,7 @@ public class LUOV {
                 Q2[k][column] = Pk3[i][i];
                 column++;
                 for (int j = i+1; j < OIL_VAR; j++) {
-                    Q2[k][column] = XOR(Pk3[i][j], Pk3[j][i]);
+                    Q2[k][column] = Functions.XOR(Pk3[i][j], Pk3[j][i]);
                     column++;
                 }
             }
@@ -399,71 +410,50 @@ public class LUOV {
      * @return Pk part Pk3.
      */
     private int[][] findPk3(int[][] T, int[][] Pk1, int[][] Pk2) {
-        int[][] T_transposed = transposeMatrix(T);
-        int[][] first = matrixMult(matrixMult(T_transposed, Pk1), T);
-        int[][] second = matrixMult(T_transposed, Pk2);
-        int[][] Pk3 = matrixAdd(first, second);
+        int[][] T_transposed = Functions.transposeMatrix(T);
+        int[][] first = Functions.matrixMult(FIELD, 131,
+                Functions.matrixMult(FIELD, 131, T_transposed, Pk1), T);
+        int[][] second = Functions.matrixMult(FIELD, 131, T_transposed, Pk2);
+        int[][] Pk3 = Functions.matrixAdd(first, second);
         return Pk3;
     }
     
     /**
-     * Calculates XOR between two numbers x and y.
-     * @param x First Integer.
-     * @param y Second Integer.
-     * @return XOR between x and y.
+     * 
+     * @param C
+     * @param L
+     * @param Q1
+     * @param T
+     * @param h
+     * @param v
+     * @return 
      */
-    private int XOR(int x, int y) {
-        return (x | y) & (~x | ~y);
+    private int[][] buildAugmentedMatrix(String C, String L, String Q1, String T, String h, String v) {
+        int[][] T_matrix = getTMatrix(T);
+        int[][] C_matrix = getCMatrix(C);
+        int[][] h_matrix = new int[OIL_VAR][1];
+        int[][] L_matrix = getLMatrix(L);
+        int[][] Q1_matrix = getQ1Matrix(Q1);
+        int[][] RHS = Functions.matrixAdd(h_matrix, C_matrix); //Falta
+        int[][] LHS = Functions.matrixMult(FIELD, 131, L_matrix, 
+                Functions.matrixRowUnion(T_matrix, Functions.identityMatrix(OIL_VAR)));
+        for (int k = 0; k < OIL_VAR; k++) {
+            int[][] Pk1 = findPk1(k, Q1_matrix);
+            int[][] Pk2 = findPk2(k, Q1_matrix);
+            RHS[k][1] = Functions.XOR(RHS[k][1], 1); //1 = Operacion qlera
+            int[][] Fk2 = Functions.matrixAdd(Functions.matrixMult(FIELD, 131, 
+                    Functions.matrixAdd(Pk1, Functions.transposeMatrix(Pk1)), T_matrix), Pk2);
+            LHS[k] = Functions.vectorAdd(LHS[k], new int[1]); //new int[1] = Operacion qlera
+        }
+        return Functions.matrixColumnUnion(LHS, RHS);
     }
     
     /**
-     * Calculates Matrix XOR Add over GF(2^7).
-     * @param mat1 First Matrix.
-     * @param mat2 Second Matrix.
-     * @return Result Matrix.
+     * 
+     * @param M
      */
-    private int[][] matrixAdd(int[][] mat1, int[][] mat2) {
-        int[][] result = new int[mat1.length][mat1[0].length];
-        for (int i = 0; i < mat1.length; i++) {
-            for (int j = 0; j < mat1[0].length; j++) {
-                result[i][j] = XOR(mat1[i][j], mat2[i][j]);
-            }
-        }
-        return result;
-    }
-    
-    /**
-     * Calculates Matrix multiplication over GF(2^7).
-     * @param mat1 First Matrix.
-     * @param mat2 Second Matrix.
-     * @return Result Matrix.
-     */
-    private int[][] matrixMult(int[][] mat1, int[][] mat2) {
-        GF2mField field = new GF2mField(FIELD, 131);
-        int[][] result = new int[mat1.length][mat2[0].length];
-        for (int i = 0; i < mat1.length; i++) {
-            for (int j = 0; j < mat2[0].length; j++) {
-                for (int k = 0; k < mat1[0].length; k++) {
-                    result[i][j] = XOR(result[i][j], field.mult(mat1[i][k], mat2[k][j]));
-                }
-            }
-        }
-        return result;
-    }
-    
-    /**
-     * Calculates the transpose of a Matrix.
-     * @param mat Matrix to be transposed.
-     * @return Transposed Matrix.
-     */
-    private int[][] transposeMatrix(int[][] mat) {
-        int[][] result = new int[mat[0].length][mat.length];
-        for (int i = 0; i < mat.length; i++) {
-            for (int j = 0; j < mat[0].length; j++) {
-                result[j][i] = mat[i][j];
-            }
-        }
-        return result;
+    public void sign(String M) {
+        
     }
     
 }
