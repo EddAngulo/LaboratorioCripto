@@ -28,10 +28,12 @@ public class LUOV {
     
     //Parameters
     public static final int FIELD = 7;
+    public static final int POLY = 131;
     public static final int OIL_VAR = 57;
     public static final int VINEGAR_VAR = 197;
     
     private KeyPair keyPair;
+    private SecretMap secretMap;
     
     private String private_seed;
     private String public_seed;
@@ -43,9 +45,14 @@ public class LUOV {
     
     /**
      * Constructor Method.
+     * @throws java.lang.Exception
      */
-    public LUOV() {
+    public LUOV() throws Exception {
+        System.out.println("Initializing LUOV Cryptosystem...");
         this.keyPair = new KeyPair();
+        this.secretMap = new SecretMap();
+        this.keyGen();
+        System.out.println("LUOV Cryptosystem Successfully Initialized");
     }
     
     /**
@@ -56,7 +63,7 @@ public class LUOV {
      * Public Key = (public_seed, Q2).
      * @throws java.lang.Exception
      */
-    public void keyGen() throws Exception {
+    private void keyGen() throws Exception {
         this.private_seed = generatePrivateSeed();
         this.public_seed = generatePublicSeed(private_seed);
         this.T = generateT(private_seed);
@@ -335,6 +342,8 @@ public class LUOV {
             int[][] Pk1 = findPk1(k, Q1_matrix);
             int[][] Pk2 = findPk2(k, Q1_matrix);
             int[][] Pk3 = findPk3(T_matrix, Pk1, Pk2);
+            secretMap.addSecretPoly(new SecretPolynomial(
+                    generateSecretPoly(T_matrix, Pk1, Pk2, Pk3)));
             int column = 0;
             for (int i = 0; i < OIL_VAR; i++) {
                 Q2[k][column] = Pk3[i][i];
@@ -411,11 +420,33 @@ public class LUOV {
      */
     private int[][] findPk3(int[][] T, int[][] Pk1, int[][] Pk2) {
         int[][] T_transposed = Functions.transposeMatrix(T);
-        int[][] first = Functions.matrixMult(FIELD, 131,
-                Functions.matrixMult(FIELD, 131, T_transposed, Pk1), T);
-        int[][] second = Functions.matrixMult(FIELD, 131, T_transposed, Pk2);
+        int[][] first = Functions.matrixMult(FIELD, POLY,
+                Functions.matrixMult(FIELD, POLY, T_transposed, Pk1), T);
+        int[][] second = Functions.matrixMult(FIELD, POLY, T_transposed, Pk2);
         int[][] Pk3 = Functions.matrixAdd(first, second);
         return Pk3;
+    }
+    
+    /**
+     * 
+     * @param T     
+     * @param Pk1     
+     * @param Pk2     
+     * @param Pk3     
+     * @return      
+     */
+    private int[][] generateSecretPoly(int[][] T, int[][] Pk1, int[][] Pk2, int[][] Pk3) {
+        int[][] T_transposed = Functions.transposeMatrix(T);
+        int[][] part2 = Functions.matrixAdd(Functions.matrixMult(FIELD, POLY, 
+                Pk1, T), Pk2);
+        int[][] part3 = Functions.matrixMult(FIELD, POLY, T_transposed, Pk1);
+        int[][] part4 = Functions.matrixAdd(Functions.matrixAdd(
+                Functions.matrixMult(FIELD, POLY, Functions.matrixMult(
+                        FIELD, POLY, T_transposed, Pk1), T), 
+                Functions.matrixMult(FIELD, POLY, T_transposed, Pk2)), Pk3);
+        int[][] upper = Functions.matrixColumnUnion(Pk1, part2);
+        int[][] lower = Functions.matrixColumnUnion(part3, part4);
+        return Functions.matrixRowUnion(upper, lower);
     }
     
     /**
@@ -435,13 +466,13 @@ public class LUOV {
         int[][] L_matrix = getLMatrix(L);
         int[][] Q1_matrix = getQ1Matrix(Q1);
         int[][] RHS = Functions.matrixAdd(h_matrix, C_matrix); //Falta
-        int[][] LHS = Functions.matrixMult(FIELD, 131, L_matrix, 
+        int[][] LHS = Functions.matrixMult(FIELD, POLY, L_matrix, 
                 Functions.matrixRowUnion(T_matrix, Functions.identityMatrix(OIL_VAR)));
         for (int k = 0; k < OIL_VAR; k++) {
             int[][] Pk1 = findPk1(k, Q1_matrix);
             int[][] Pk2 = findPk2(k, Q1_matrix);
             RHS[k][1] = Functions.XOR(RHS[k][1], 1); //1 = Operacion qlera
-            int[][] Fk2 = Functions.matrixAdd(Functions.matrixMult(FIELD, 131, 
+            int[][] Fk2 = Functions.matrixAdd(Functions.matrixMult(FIELD, POLY, 
                     Functions.matrixAdd(Pk1, Functions.transposeMatrix(Pk1)), T_matrix), Pk2);
             LHS[k] = Functions.vectorAdd(LHS[k], new int[1]); //new int[1] = Operacion qlera
         }

@@ -1,8 +1,4 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+
 package com.cripto.utils;
 
 import java.util.Arrays;
@@ -179,6 +175,26 @@ public class Functions {
         System.arraycopy(vec1, 0, result, 0, vec1.length);
         System.arraycopy(vec2, 0, result, vec1.length, vec2.length);  
         return result;
+    }
+    
+    /**
+     * 
+     * @param mat1     
+     * @param mat2     
+     * @return      
+     */
+    public static boolean matrixEquals(int[][] mat1, int[][] mat2) {
+        if(!(mat1.length == mat2.length && mat1[0].length == mat2[0].length)) {
+            return false;
+        }
+        for (int i = 0; i < mat1.length; i++) {
+            for (int j = 0; j < mat1[0].length; j++) {
+                if(mat1[i][j] != mat2[i][j]) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
     
 }

@@ -19,7 +19,6 @@ public class Main {
      */
     public static void main(String[] args) throws Exception {
         LUOV luov = new LUOV();
-        luov.keyGen();
         luov.printKeyPair();
     }
     
