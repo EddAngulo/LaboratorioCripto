@@ -1,10 +1,9 @@
 
 package com.cripto.luov;
 
-import com.cripto.utils.Functions;
+import com.cripto.utils.functions.Functions;
 import com.cripto.utils.KeyPair;
 import java.math.BigInteger;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
@@ -88,8 +87,7 @@ public class LUOV {
      * @throws java.lang.Exception
      */
     private String generatePrivateSeed() throws Exception {
-        byte[] private_seed = new byte[32];
-        SecureRandom.getInstanceStrong().nextBytes(private_seed);
+        byte[] private_seed = PRNG.randomBytes(32);
         return Hex.toHexString(private_seed);
     }
     
@@ -207,13 +205,15 @@ public class LUOV {
         String L = "";
         String Q1 = "";
         byte[] initKey = Hex.decode(public_seed);
-        String hash = Hex.toHexString(getHash512(Arrays.copyOf(initKey, initKey.length)));
+        String hash = Hex.toHexString(generateInternalHash512(Arrays.copyOf(
+                initKey, initKey.length)));
         String processHash = hash + hash + hash + hash;
         byte[] processData = Hex.decode(processHash);
         ChaChaEngine chacha = new ChaChaEngine();
         for (int i = 0; i < OIL_VAR; i++) {
             String nonce = padding("" + i, 8);
-            chacha.init(true, new ParametersWithIV(new KeyParameter(initKey), nonce.getBytes()));
+            chacha.init(true, new ParametersWithIV(new KeyParameter(initKey), 
+                    nonce.getBytes()));
             byte[] resultData = new byte[512];
             chacha.processBytes(processData, 0, processData.length, resultData, 0);
             processData = Arrays.copyOf(resultData, resultData.length);
@@ -244,7 +244,8 @@ public class LUOV {
         }
         for (int i = OIL_VAR; i < OIL_VAR*(OIL_VAR + 4); i++) {
             String nonce = padding("" + i, 8);
-            chacha.init(true, new ParametersWithIV(new KeyParameter(initKey), nonce.getBytes()));
+            chacha.init(true, new ParametersWithIV(new KeyParameter(initKey), 
+                    nonce.getBytes()));
             byte[] resultData = new byte[512];
             chacha.processBytes(processData, 0, processData.length, resultData, 0);
             processData = Arrays.copyOf(resultData, resultData.length);
@@ -269,7 +270,7 @@ public class LUOV {
      * @param data Data to be hashed.
      * @return Sha512 Hash of data.
      */
-    private byte[] getHash512(byte[] data) {
+    private byte[] generateInternalHash512(byte[] data) {
         SHA512Digest digest = new SHA512Digest();
         digest.update(data, 0, data.length);
         byte[] result = new byte[64];
@@ -343,7 +344,7 @@ public class LUOV {
             int[][] Pk2 = findPk2(k, Q1_matrix);
             int[][] Pk3 = findPk3(T_matrix, Pk1, Pk2);
             secretMap.addSecretPoly(new SecretPolynomial(
-                    generateSecretPoly(T_matrix, Pk1, Pk2, Pk3)));
+                    generateSecretPoly(T_matrix, Pk1, Pk2)));
             int column = 0;
             for (int i = 0; i < OIL_VAR; i++) {
                 Q2[k][column] = Pk3[i][i];
@@ -432,21 +433,42 @@ public class LUOV {
      * @param T     
      * @param Pk1     
      * @param Pk2     
-     * @param Pk3     
      * @return      
      */
-    private int[][] generateSecretPoly(int[][] T, int[][] Pk1, int[][] Pk2, int[][] Pk3) {
+    private int[][] generateSecretPoly(int[][] T, int[][] Pk1, int[][] Pk2) {
         int[][] T_transposed = Functions.transposeMatrix(T);
         int[][] part2 = Functions.matrixAdd(Functions.matrixMult(FIELD, POLY, 
                 Pk1, T), Pk2);
         int[][] part3 = Functions.matrixMult(FIELD, POLY, T_transposed, Pk1);
-        int[][] part4 = Functions.matrixAdd(Functions.matrixAdd(
-                Functions.matrixMult(FIELD, POLY, Functions.matrixMult(
-                        FIELD, POLY, T_transposed, Pk1), T), 
-                Functions.matrixMult(FIELD, POLY, T_transposed, Pk2)), Pk3);
+        int[][] part4 = Functions.sameValueMatrix(OIL_VAR, OIL_VAR, 0);
         int[][] upper = Functions.matrixColumnUnion(Pk1, part2);
         int[][] lower = Functions.matrixColumnUnion(part3, part4);
         return Functions.matrixRowUnion(upper, lower);
+    }
+    
+    /**
+     * 
+     * @param T
+     * @return 
+     */
+    private int[][] buildLinearTransMatrix(String T) {
+        int[][] T_matrix = getTMatrix(T);
+        int[][] upper = Functions.matrixColumnUnion(
+                Functions.identityMatrix(VINEGAR_VAR), T_matrix);
+        int[][] lower = Functions.matrixColumnUnion(
+                Functions.sameValueMatrix(OIL_VAR, VINEGAR_VAR, 0), 
+                Functions.identityMatrix(OIL_VAR));
+        return Functions.matrixRowUnion(upper, lower);
+    }
+    
+    /**
+     * 
+     * @param msg     
+     * @return      
+     */
+    private int[][] buildMessageVector(byte[] msg) {
+        int[][] msgVector = new int[OIL_VAR][1];
+        return msgVector;
     }
     
     /**
@@ -459,22 +481,31 @@ public class LUOV {
      * @param v
      * @return 
      */
-    private int[][] buildAugmentedMatrix(String C, String L, String Q1, String T, String h, String v) {
+    private int[][] buildAugmentedMatrix(String C, String L, String Q1, String T, int[][] h, int[][] v) {
         int[][] T_matrix = getTMatrix(T);
         int[][] C_matrix = getCMatrix(C);
-        int[][] h_matrix = new int[OIL_VAR][1];
         int[][] L_matrix = getLMatrix(L);
         int[][] Q1_matrix = getQ1Matrix(Q1);
-        int[][] RHS = Functions.matrixAdd(h_matrix, C_matrix); //Falta
+        int[][] RHS = Functions.matrixAdd(Functions.matrixAdd(h, C_matrix), 
+                Functions.matrixMult(FIELD, POLY, L_matrix, 
+                        Functions.matrixRowUnion(v, 
+                                Functions.sameValueMatrix(OIL_VAR, 1, 0))));
         int[][] LHS = Functions.matrixMult(FIELD, POLY, L_matrix, 
-                Functions.matrixRowUnion(T_matrix, Functions.identityMatrix(OIL_VAR)));
+                Functions.matrixRowUnion(T_matrix, 
+                        Functions.identityMatrix(OIL_VAR)));
         for (int k = 0; k < OIL_VAR; k++) {
             int[][] Pk1 = findPk1(k, Q1_matrix);
             int[][] Pk2 = findPk2(k, Q1_matrix);
-            RHS[k][1] = Functions.XOR(RHS[k][1], 1); //1 = Operacion qlera
+            int[][] temp1 = Functions.matrixMult(FIELD, POLY, 
+                    Functions.matrixMult(FIELD, POLY, 
+                            Functions.transposeMatrix(v), Pk1), v);
+            RHS[k][1] = Functions.XOR(RHS[k][1], temp1[0][0]);
             int[][] Fk2 = Functions.matrixAdd(Functions.matrixMult(FIELD, POLY, 
-                    Functions.matrixAdd(Pk1, Functions.transposeMatrix(Pk1)), T_matrix), Pk2);
-            LHS[k] = Functions.vectorAdd(LHS[k], new int[1]); //new int[1] = Operacion qlera
+                    Functions.matrixAdd(Pk1, Functions.transposeMatrix(Pk1)), 
+                    T_matrix), Pk2);
+            int[][] temp2 = Functions.matrixMult(FIELD, POLY, 
+                    Functions.transposeMatrix(v), Fk2);
+            LHS[k] = Functions.vectorAdd(LHS[k], temp2[0]);
         }
         return Functions.matrixColumnUnion(LHS, RHS);
     }
@@ -482,8 +513,32 @@ public class LUOV {
     /**
      * 
      * @param M
+     * @throws java.lang.Exception
      */
-    public void sign(String M) {
+    public void sign(String M) throws Exception {
+        boolean solutionFound = false;
+        int[][] s_prime = null;
+        byte[] zero = {0};
+        byte[] salt = PRNG.randomBytes(16);
+        byte[] finalMsg = Functions.concatenateVectors(
+                Functions.concatenateVectors(M.getBytes(), zero), salt);
+        byte[] hashedMsg = PRNG.getHashDigest(finalMsg, FIELD*OIL_VAR); //Error
+        int[][] h = buildMessageVector(hashedMsg); //Falta
+        while(!solutionFound) {
+            byte[] vinegarAssign = PRNG.randomBytes(VINEGAR_VAR);
+            int[][] v = Functions.bytesToFieldVector(vinegarAssign);
+            int[][] A = buildAugmentedMatrix(C, L, Q1, T, h, v);
+            int[][] o = Functions.transposeRowVector(
+                    Functions.gaussianElimination(FIELD, POLY, A, new int[1])); //Corregir
+            if(o != null) {
+                if(Functions.matrixEquals(secretMap.evalSecretMap(v, o), h)) {
+                    solutionFound = true;
+                    s_prime = Functions.matrixRowUnion(v, o);
+                }
+            }
+        }
+        int[][] s = Functions.matrixMult(FIELD, POLY, 
+                buildLinearTransMatrix(T), s_prime);
         
     }
     

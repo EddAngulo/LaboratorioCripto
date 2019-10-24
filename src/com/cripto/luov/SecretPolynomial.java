@@ -5,7 +5,10 @@ import com.cripto.utils.Polynomial;
 
 /**
  *
- * @author eduar
+ * @author Eduardo Angulo
+ * @author Sebastián Cabarcas
+ * @author Andrés Duarte
+ * @author Jorge Pinzón
  */
 public class SecretPolynomial extends Polynomial {
     

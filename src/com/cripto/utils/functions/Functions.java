@@ -1,12 +1,17 @@
 
-package com.cripto.utils;
+package com.cripto.utils.functions;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 import org.bouncycastle.pqc.math.linearalgebra.GF2mField;
+import org.bouncycastle.util.encoders.Hex;
 
 /**
  *
- * @author eduar
+ * @author Eduardo Angulo
+ * @author Sebastián Cabarcas
+ * @author Andrés Duarte
+ * @author Jorge Pinzón
  */
 public class Functions {
     
@@ -100,6 +105,25 @@ public class Functions {
     }
     
     /**
+     * @param data     
+     * @return      
+     */
+    public static int[][] bytesToFieldVector(byte[] data) {
+        int[][] result = new int[data.length][1];
+        for (int i = 0; i < data.length; i++) {
+            if(data[i] < 0) {
+                data[i] = (byte) (128 + data[i]);
+            }
+        }
+        String hexString = Hex.toHexString(data);
+        for (int i = 0; i < data.length; i++) {
+            String hex = hexString.substring(2*i, 2*(i+1));
+            result[i][1] = (new BigInteger(hex, 16)).intValue();
+        }
+        return result;
+    }
+    
+    /**
      * 
      * @param row
      * @param column
@@ -179,6 +203,19 @@ public class Functions {
     
     /**
      * 
+     * @param vec1
+     * @param vec2
+     * @return 
+     */
+    public static byte[] concatenateVectors(byte[] vec1, byte[] vec2) {
+        byte[] result = new byte[vec1.length + vec2.length];
+        System.arraycopy(vec1, 0, result, 0, vec1.length);
+        System.arraycopy(vec2, 0, result, vec1.length, vec2.length);  
+        return result;
+    }
+    
+    /**
+     * 
      * @param mat1     
      * @param mat2     
      * @return      
@@ -195,6 +232,31 @@ public class Functions {
             }
         }
         return true;
+    }
+    
+    /**
+     * 
+     * @param degree     
+     * @param poly     
+     * @param A     
+     * @param b     
+     * @return      
+     */
+    public static int[] gaussianElimination(int degree, int poly, int[][] A, int[] b) {
+        ComputeGaussian cg = new ComputeGaussian(degree, poly);
+        return cg.solveEquation(A, b);
+    }
+    
+    /**
+     * 
+     * @param degree     
+     * @param poly     
+     * @param A Matrix to be inverted.
+     * @return      
+     */
+    public static int[][] invertMatrix(int degree, int poly, int[][] A) {
+        ComputeInverse ci = new ComputeInverse(degree, poly);
+        return ci.inverse(A);
     }
     
 }

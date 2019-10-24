@@ -1,12 +1,15 @@
 
 package com.cripto.luov;
 
-import com.cripto.utils.Functions;
+import com.cripto.utils.functions.Functions;
 import java.util.ArrayList;
 
 /**
  *
- * @author eduar
+ * @author Eduardo Angulo
+ * @author Sebastián Cabarcas
+ * @author Andrés Duarte
+ * @author Jorge Pinzón
  */
 public class SecretMap {
     
