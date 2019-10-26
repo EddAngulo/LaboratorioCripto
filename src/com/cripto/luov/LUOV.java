@@ -3,6 +3,7 @@ package com.cripto.luov;
 
 import com.cripto.utils.functions.Functions;
 import com.cripto.utils.KeyPair;
+import com.cripto.utils.functions.Pack;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -70,7 +71,7 @@ public class LUOV {
         this.C = CLQ1.get(0);
         this.L = CLQ1.get(1);
         this.Q1 = CLQ1.get(2);
-        this.Q2 = packQ2(findQ2(Q1, T));
+        this.Q2 = Pack.pack(findQ2(Q1, T));
         this.keyPair = new KeyPair(private_seed, public_seed, Q2);
     }
     
@@ -169,26 +170,13 @@ public class LUOV {
         int[][] T_matrix = new int[VINEGAR_VAR][OIL_VAR];
         for (int i = 0; i < VINEGAR_VAR; i++) {
             String hex = T.substring(16*i, 16*(i+1));
-            String bin = padding((new BigInteger(hex, 16)).toString(2), OIL_VAR);
+            String bin = Functions.padding((new BigInteger(
+                    hex, 16)).toString(2), OIL_VAR);
             for (int j = 0; j < OIL_VAR; j++) {
                 T_matrix[i][j] = (int) (bin.charAt(j)) - 48;
             }
         }
         return T_matrix;
-    }
-    
-    /**
-     * Make padding of a Binary String with 0s.
-     * @param binStr Binary String to be padded.
-     * @param N Lenght to be padded.
-     * @return Padded String.
-     */
-    private String padding(String binStr, int N) {
-        String aux = binStr;
-        while(aux.length() < N) {
-            aux = "0" + aux;
-        }
-        return aux;
     }
     
     /**
@@ -211,7 +199,7 @@ public class LUOV {
         byte[] processData = Hex.decode(processHash);
         ChaChaEngine chacha = new ChaChaEngine();
         for (int i = 0; i < OIL_VAR; i++) {
-            String nonce = padding("" + i, 8);
+            String nonce = Functions.padding("" + i, 8);
             chacha.init(true, new ParametersWithIV(new KeyParameter(initKey), 
                     nonce.getBytes()));
             byte[] resultData = new byte[512];
@@ -243,7 +231,7 @@ public class LUOV {
             Q1 += Hex.toHexString(aux_Q1);
         }
         for (int i = OIL_VAR; i < OIL_VAR*(OIL_VAR + 4); i++) {
-            String nonce = padding("" + i, 8);
+            String nonce = Functions.padding("" + i, 8);
             chacha.init(true, new ParametersWithIV(new KeyParameter(initKey), 
                     nonce.getBytes()));
             byte[] resultData = new byte[512];
@@ -279,56 +267,6 @@ public class LUOV {
     }
     
     /**
-     * Generates a vector of elements in GF(2^7) from C Hex String.
-     * @param C Matrix C String in hexagesimal.
-     * @return Integer (GF(2^7) elements) C Column Vector.
-     */
-    private int[][] getCMatrix(String C) {
-        int[] C_matrix = new int[OIL_VAR];
-        for (int i = 0; i < OIL_VAR; i++) {
-            String hex = C.substring(2*i, 2*(i+1));
-            C_matrix[i] = (new BigInteger(hex, 16)).intValue();
-        }
-        return Functions.transposeRowVector(C_matrix);
-    }
-    
-    /**
-     * Generates a matrix of elements in GF(2^7) from L Hex String.
-     * @param L Matrix L String in hexagesimal.
-     * @return Integer (GF(2^7) elements) L Matrix.
-     */
-    private int[][] getLMatrix(String L) {
-        int N = OIL_VAR + VINEGAR_VAR;
-        int[][] L_matrix = new int[OIL_VAR][N];
-        for (int i = 0; i < OIL_VAR; i++) {
-            String row = L.substring(2*N*i, 2*N*(i+1));
-            for (int j = 0; j < N; j++) {
-                String hex = row.substring(2*j, 2*(j+1));
-                L_matrix[i][j] = (new BigInteger(hex, 16)).intValue();
-            }
-        }
-        return L_matrix;
-    }
-    
-    /**
-     * Generates a matrix of elements in GF(2^7) from Q1 Hex String.
-     * @param Q1 Matrix Q1 String in hexagesimal.
-     * @return Integer (GF(2^7) elements) Q1 Matrix.
-     */
-    private int[][] getQ1Matrix(String Q1) {
-        int COLUMNS = (VINEGAR_VAR*(VINEGAR_VAR + 1)/2) + (VINEGAR_VAR * OIL_VAR);
-        int[][] Q1_matrix = new int[OIL_VAR][COLUMNS];
-        for (int i = 0; i < OIL_VAR; i++) {
-            String row = Q1.substring(2*COLUMNS*i, 2*COLUMNS*(i+1));
-            for (int j = 0; j < COLUMNS; j++) {
-                String hex = row.substring(2*j, 2*(j+1));
-                Q1_matrix[i][j] = (new BigInteger(hex, 16)).intValue();
-            }
-        }
-        return Q1_matrix;
-    }
-    
-    /**
      * Calculates the second part of the quadratic part of the Public Map.
      * @param Q1 Matrix Q1 Hex String
      * @param T Matrix T Hex String
@@ -336,15 +274,14 @@ public class LUOV {
      */
     private int[][] findQ2(String Q1, String T) {
         int DIM = OIL_VAR*(OIL_VAR + 1)/2;
-        int[][] Q1_matrix = getQ1Matrix(Q1);
+        int[][] Q1_matrix = Pack.unpack(Q1, OIL_VAR, 
+                (VINEGAR_VAR*(VINEGAR_VAR + 1)/2) + (VINEGAR_VAR * OIL_VAR));
         int[][] T_matrix = getTMatrix(T);
         int[][] Q2 = new int[OIL_VAR][DIM];
         for (int k = 0; k < OIL_VAR; k++) {
             int[][] Pk1 = findPk1(k, Q1_matrix);
             int[][] Pk2 = findPk2(k, Q1_matrix);
             int[][] Pk3 = findPk3(T_matrix, Pk1, Pk2);
-            secretMap.addSecretPoly(new SecretPolynomial(
-                    generateSecretPoly(T_matrix, Pk1, Pk2)));
             int column = 0;
             for (int i = 0; i < OIL_VAR; i++) {
                 Q2[k][column] = Pk3[i][i];
@@ -356,21 +293,6 @@ public class LUOV {
             }
         }
         return Q2;
-    }
-    
-    /**
-     * Generates the Hex String of Matrix Q2.
-     * @param Q2 Integer GF(2^7) Q2 Matrix (Quadratic part of Public Map).
-     * @return Hex String of Q2.
-     */
-    private String packQ2(int[][] Q2) {
-        String Q2_hex = "";
-        for (int i = 0; i < Q2.length; i++) {
-            for (int j = 0; j < Q2[0].length; j++) {
-                Q2_hex += padding((new BigInteger("" + Q2[i][j])).toString(16), 2);
-            }
-        }
-        return Q2_hex;
     }
     
     /**
@@ -468,6 +390,12 @@ public class LUOV {
      */
     private int[][] buildMessageVector(byte[] msg) {
         int[][] msgVector = new int[OIL_VAR][1];
+        String bitString = Functions.padding((new BigInteger(
+                Hex.toHexString(msg), 16)).toString(2), FIELD*OIL_VAR);
+        for (int i = 0; i < OIL_VAR; i++) {
+            String bits = bitString.substring(FIELD*i, FIELD*(i+1));
+            msgVector[i][0] = (new BigInteger(bits, 2)).intValue();
+        }
         return msgVector;
     }
     
@@ -483,9 +411,10 @@ public class LUOV {
      */
     private int[][] buildAugmentedMatrix(String C, String L, String Q1, String T, int[][] h, int[][] v) {
         int[][] T_matrix = getTMatrix(T);
-        int[][] C_matrix = getCMatrix(C);
-        int[][] L_matrix = getLMatrix(L);
-        int[][] Q1_matrix = getQ1Matrix(Q1);
+        int[][] C_matrix = Pack.unpack(C, OIL_VAR, 1);
+        int[][] L_matrix = Pack.unpack(L, OIL_VAR, OIL_VAR + VINEGAR_VAR);
+        int[][] Q1_matrix = Pack.unpack(Q1, OIL_VAR, 
+                (VINEGAR_VAR*(VINEGAR_VAR + 1)/2) + (VINEGAR_VAR * OIL_VAR));
         int[][] RHS = Functions.matrixAdd(Functions.matrixAdd(h, C_matrix), 
                 Functions.matrixMult(FIELD, POLY, L_matrix, 
                         Functions.matrixRowUnion(v, 
@@ -499,7 +428,7 @@ public class LUOV {
             int[][] temp1 = Functions.matrixMult(FIELD, POLY, 
                     Functions.matrixMult(FIELD, POLY, 
                             Functions.transposeMatrix(v), Pk1), v);
-            RHS[k][1] = Functions.XOR(RHS[k][1], temp1[0][0]);
+            RHS[k][0] = Functions.XOR(RHS[k][0], temp1[0][0]);
             int[][] Fk2 = Functions.matrixAdd(Functions.matrixMult(FIELD, POLY, 
                     Functions.matrixAdd(Pk1, Functions.transposeMatrix(Pk1)), 
                     T_matrix), Pk2);
@@ -513,33 +442,37 @@ public class LUOV {
     /**
      * 
      * @param M
+     * @return 
      * @throws java.lang.Exception
      */
-    public void sign(String M) throws Exception {
+    public ArrayList<String> sign(String M) throws Exception {
+        ArrayList<String> signResult = new ArrayList<>();
         boolean solutionFound = false;
         int[][] s_prime = null;
         byte[] zero = {0};
         byte[] salt = PRNG.randomBytes(16);
         byte[] finalMsg = Functions.concatenateVectors(
                 Functions.concatenateVectors(M.getBytes(), zero), salt);
-        byte[] hashedMsg = PRNG.getHashDigest(finalMsg, FIELD*OIL_VAR); //Error
-        int[][] h = buildMessageVector(hashedMsg); //Falta
+        byte[] hashedMsg = PRNG.getHashDigest(finalMsg, FIELD*OIL_VAR); 
+        int[][] h = buildMessageVector(hashedMsg);
         while(!solutionFound) {
             byte[] vinegarAssign = PRNG.randomBytes(VINEGAR_VAR);
             int[][] v = Functions.bytesToFieldVector(vinegarAssign);
             int[][] A = buildAugmentedMatrix(C, L, Q1, T, h, v);
-            int[][] o = Functions.transposeRowVector(
-                    Functions.gaussianElimination(FIELD, POLY, A, new int[1])); //Corregir
-            if(o != null) {
-                if(Functions.matrixEquals(secretMap.evalSecretMap(v, o), h)) {
-                    solutionFound = true;
-                    s_prime = Functions.matrixRowUnion(v, o);
-                }
+            int[] oVect = Functions.gaussianElimination(FIELD, POLY, 
+                            Functions.equationCoeficients(A), 
+                            Functions.equationConstants(A));
+            if(oVect != null) {
+                int[][] o = Functions.transposeRowVector(oVect);
+                solutionFound = true;
+                s_prime = Functions.matrixRowUnion(v, o);
             }
         }
         int[][] s = Functions.matrixMult(FIELD, POLY, 
                 buildLinearTransMatrix(T), s_prime);
-        
+        signResult.add(Pack.pack(s));
+        signResult.add(Hex.toHexString(salt));
+        return signResult;
     }
     
 }

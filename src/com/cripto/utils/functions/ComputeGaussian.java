@@ -18,8 +18,8 @@ public class ComputeGaussian {
     
     /**
      * Constructor Method.
-     * @param degree
-     * @param poly
+     * @param degree GF Degree.
+     * @param poly Irreducible Polynomial in GF(2^degree).
      */
     public ComputeGaussian(int degree, int poly) {
         this.gf = new GF2mField(degree, poly);
@@ -170,7 +170,5 @@ public class ComputeGaussian {
             x[i] = gf.mult(tmp, temp);
         }
     }
-    
-    
     
 }

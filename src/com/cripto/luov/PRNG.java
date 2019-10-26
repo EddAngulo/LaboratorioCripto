@@ -2,6 +2,7 @@
 package com.cripto.luov;
 
 import java.security.SecureRandom;
+import java.util.Arrays;
 import org.bouncycastle.crypto.digests.KeccakDigest;
 
 /**
@@ -28,15 +29,19 @@ public class PRNG {
     /**
      * 
      * @param data     
-     * @param bitLenght     
+     * @param bitLength     
      * @return      
      */
-    public static byte[] getHashDigest(byte[] data, int bitLenght) {
-        KeccakDigest digest = new KeccakDigest(bitLenght);
+    public static byte[] getHashDigest(byte[] data, double bitLength) {
+        int byteLength = (int) (Math.ceil(bitLength/8));
+        KeccakDigest digest = new KeccakDigest(512);
         digest.update(data, 0, data.length);
-        int resultLenght = (int) (Math.ceil(bitLenght/8));
-        byte[] result = new byte[resultLenght];
-        digest.doFinal(result, 0);
+        byte[] afterHash = new byte[64];
+        digest.doFinal(afterHash, 0);
+        byte[] result = Arrays.copyOf(afterHash, byteLength);
+        if(result[0] < 0) {
+            result[0] = (byte) (128 + result[0]);
+        }
         return result;
     }
     

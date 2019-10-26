@@ -16,6 +16,20 @@ import org.bouncycastle.util.encoders.Hex;
 public class Functions {
     
     /**
+     * Make padding of a Binary String with 0s.
+     * @param binStr Binary String to be padded.
+     * @param N Lenght to be padded.
+     * @return Padded String.
+     */
+    public static String padding(String binStr, int N) {
+        String aux = binStr;
+        while(aux.length() < N) {
+            aux = "0" + aux;
+        }
+        return aux;
+    }
+    
+    /**
      * Calculates XOR between two numbers x and y.
      * @param x First Integer.
      * @param y Second Integer.
@@ -99,12 +113,13 @@ public class Functions {
     public static int[][] transposeRowVector(int[] vec) {
         int[][] result = new int[vec.length][1];
         for (int i = 0; i < vec.length; i++) {
-            result[i][1] = vec[i];
+            result[i][0] = vec[i];
         }
         return result;
     }
     
     /**
+     * 
      * @param data     
      * @return      
      */
@@ -118,7 +133,7 @@ public class Functions {
         String hexString = Hex.toHexString(data);
         for (int i = 0; i < data.length; i++) {
             String hex = hexString.substring(2*i, 2*(i+1));
-            result[i][1] = (new BigInteger(hex, 16)).intValue();
+            result[i][0] = (new BigInteger(hex, 16)).intValue();
         }
         return result;
     }
@@ -257,6 +272,32 @@ public class Functions {
     public static int[][] invertMatrix(int degree, int poly, int[][] A) {
         ComputeInverse ci = new ComputeInverse(degree, poly);
         return ci.inverse(A);
+    }
+    
+    /**
+     * 
+     * @param A
+     * @return 
+     */
+    public static int[][] equationCoeficients(int[][] A) {
+        int[][] B = new int[A.length][A.length];
+        for (int i = 0; i < A.length; i++) {
+            B[i] = Arrays.copyOf(A[i], A[i].length - 1);
+        }
+        return B;
+    }
+    
+    /**
+     * 
+     * @param A
+     * @return 
+     */
+    public static int[] equationConstants(int[][] A) {
+        int[] b = new int[A.length];
+        for (int i = 0; i < A.length; i++) {
+            b[i] = A[i][A[0].length - 1];
+        }
+        return b;
     }
     
 }

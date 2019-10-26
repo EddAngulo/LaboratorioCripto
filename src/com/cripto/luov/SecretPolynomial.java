@@ -12,10 +12,18 @@ import com.cripto.utils.Polynomial;
  */
 public class SecretPolynomial extends Polynomial {
     
+    /**
+     * Constructor Method.
+     * @param polyMatrix     
+     */
     public SecretPolynomial(int[][] polyMatrix) {
         this.polyMatrix = polyMatrix;
     }
     
+    /**
+     * 
+     * @return     
+     */
     public int[][] getPolyMatrix() {
         return polyMatrix;
     }

@@ -62,7 +62,7 @@ public class SecretMap {
                     vars_tran, secretPolys.get(i).getPolyMatrix());
             int[][] result = Functions.matrixMult(LUOV.FIELD, LUOV.POLY, 
                     left, vars);
-            eval[i][1] = result[0][0];
+            eval[i][0] = result[0][0];
         }
         return eval;
     }

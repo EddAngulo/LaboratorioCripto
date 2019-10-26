@@ -2,7 +2,7 @@
 package com.cripto.utils;
 
 /**
- *
+ * Polynomial Representation Abstract Class.
  * @author Eduardo Angulo
  * @author Sebastián Cabarcas
  * @author Andrés Duarte

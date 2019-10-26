@@ -12,8 +12,8 @@ public class ComputeInverse extends ComputeGaussian {
     
     /**
      * Constructor Method.
-     * @param degree
-     * @param poly
+     * @param degree GF Degree.
+     * @param poly Irreducible Polynomial in GF(2^degree).
      */
     public ComputeInverse(int degree, int poly) {
         super(degree, poly);
