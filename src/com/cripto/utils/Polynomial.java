@@ -10,6 +10,8 @@ package com.cripto.utils;
  */
 public abstract class Polynomial {
     
-    protected int[][] polyMatrix;
+    protected int[][] constantPart;
+    protected int[][] linearPart;
+    protected int[][] quadraticPart;
     
 }

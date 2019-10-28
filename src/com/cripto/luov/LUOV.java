@@ -351,11 +351,11 @@ public class LUOV {
     }
     
     /**
-     * 
-     * @param T     
-     * @param Pk1     
-     * @param Pk2     
-     * @return      
+     * Generates the Quadratic Part of Secrets Polynomials.
+     * @param T T matrix.
+     * @param Pk1 Pk1 Matrix (Quadratic in Vinegar Vars).
+     * @param Pk2 Pk2 Matrix (Bilineal in Oil and Vinegar Vars).
+     * @return Matrix that represents the Quadratic Part of a Secret Polynomial.
      */
     private int[][] generateSecretPoly(int[][] T, int[][] Pk1, int[][] Pk2) {
         int[][] T_transposed = Functions.transposeMatrix(T);
@@ -369,9 +369,9 @@ public class LUOV {
     }
     
     /**
-     * 
-     * @param T
-     * @return 
+     * Builds the Linear Transformation Matrix [[1v, T]; [0, 1m]].
+     * @param T Hex String of T matrix.
+     * @return Linear Transformation Matrix (n x n).
      */
     private int[][] buildLinearTransMatrix(String T) {
         int[][] T_matrix = getTMatrix(T);
@@ -384,9 +384,10 @@ public class LUOV {
     }
     
     /**
-     * 
-     * @param msg     
-     * @return      
+     * Generates the int Message Vector over GF(2^r) from the message byte array
+     * after hashing.
+     * @param msg Byte Array of the Message after hashing.
+     * @return Message Vector over GF(2^r).
      */
     private int[][] buildMessageVector(byte[] msg) {
         int[][] msgVector = new int[OIL_VAR][1];
@@ -400,14 +401,14 @@ public class LUOV {
     }
     
     /**
-     * 
-     * @param C
-     * @param L
-     * @param Q1
-     * @param T
-     * @param h
-     * @param v
-     * @return 
+     * Builds the Augmented Matrix for the Equation System to solve.
+     * @param C Hex String of C Matrix.
+     * @param L Hex String of L Matrix.
+     * @param Q1 Hex String of Q1 Matrix.
+     * @param T Hex String of T Matrix.
+     * @param h Int Message Vector over GF(2^r).
+     * @param v Random Assign for Vinegar Vars.
+     * @return Augmneted Matrix (LHS||RHS).
      */
     private int[][] buildAugmentedMatrix(String C, String L, String Q1, String T, int[][] h, int[][] v) {
         int[][] T_matrix = getTMatrix(T);
@@ -440,9 +441,9 @@ public class LUOV {
     }
     
     /**
-     * 
-     * @param M
-     * @return 
+     * Sign the given Message.
+     * @param M Message to be Signed.
+     * @return Message Signature (s, salt).
      * @throws java.lang.Exception
      */
     public ArrayList<String> sign(String M) throws Exception {

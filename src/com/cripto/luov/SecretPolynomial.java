@@ -4,7 +4,7 @@ package com.cripto.luov;
 import com.cripto.utils.Polynomial;
 
 /**
- *
+ * Secret Polynomial Class.
  * @author Eduardo Angulo
  * @author Sebastián Cabarcas
  * @author Andrés Duarte
@@ -14,18 +14,18 @@ public class SecretPolynomial extends Polynomial {
     
     /**
      * Constructor Method.
-     * @param polyMatrix     
+     * @param quadraticPart Matrix Corresponding to a Polynomial Quadratic Part.
      */
-    public SecretPolynomial(int[][] polyMatrix) {
-        this.polyMatrix = polyMatrix;
+    public SecretPolynomial(int[][] quadraticPart) {
+        this.quadraticPart = quadraticPart;
     }
     
     /**
-     * 
-     * @return     
+     * Get the Matrix Corresponding to a Polynomial Quadratic Part.
+     * @return Quadratic Part of Desired Polynomial.
      */
-    public int[][] getPolyMatrix() {
-        return polyMatrix;
+    public int[][] getQuadraticPart() {
+        return quadraticPart;
     }
     
 }

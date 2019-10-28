@@ -26,10 +26,10 @@ public class KeyPair {
     }
     
     /**
-     * 
-     * @param private_seed     
-     * @param public_seed     
-     * @param Q2_string     
+     * Constructor Method.
+     * @param private_seed Private Seed of LUOV Cryptosystem.
+     * @param public_seed Public Seed of LUOV Cryptosystem.
+     * @param Q2_string Q2 String of LUOV Cryptosystem.
      */
     public KeyPair(String private_seed, String public_seed, String Q2_string) {
         this.privateKey = private_seed;
@@ -39,33 +39,33 @@ public class KeyPair {
     }
 
     /**
-     * 
-     * @return     
+     * Get the Private Key.
+     * @return The Private Key.
      */
     public String getPrivateKey() {
         return privateKey;
     }
 
     /**
-     * 
-     * @param privateKey
+     * Set the Private Key.
+     * @param privateKey Private Seed of LUOV Cryptosystem.
      */
     public void setPrivateKey(String privateKey) {
         this.privateKey = privateKey;
     }
     
     /**
-     * 
-     * @return     
+     * Get the Public Key.
+     * @return The Public Key.
      */
     public ArrayList<String> getPublicKey() {
         return publicKey;
     }
     
     /**
-     * 
-     * @param public_seed     
-     * @param Q2_string     
+     * Set the Public Key.
+     * @param public_seed Public Seed of LUOV Cryptosystem.
+     * @param Q2_string Q2 String of LUOV Cryptosystem.
      */
     public void setPublicKey(String public_seed, String Q2_string) {
         this.publicKey = new ArrayList<>();
@@ -74,8 +74,8 @@ public class KeyPair {
     }
     
     /**
-     * 
-     * @return     
+     * Override of toString of the Object.
+     * @return To String of the Object.
      */
     @Override
     public String toString() {

@@ -6,7 +6,7 @@ import java.util.Arrays;
 import org.bouncycastle.crypto.digests.KeccakDigest;
 
 /**
- *
+ * PRNG Class.
  * @author Eduardo Angulo
  * @author Sebastián Cabarcas
  * @author Andrés Duarte
@@ -15,22 +15,22 @@ import org.bouncycastle.crypto.digests.KeccakDigest;
 public class PRNG {
     
     /**
-     * 
-     * @param lenght     
-     * @return      
+     * Generates a Random Byte Array of the Given Length.
+     * @param length Array Length.
+     * @return Random Byte Array.
      * @throws java.lang.Exception     
      */
-    public static byte[] randomBytes(int lenght) throws Exception {
-        byte[] rnd = new byte[lenght];
+    public static byte[] randomBytes(int length) throws Exception {
+        byte[] rnd = new byte[length];
         SecureRandom.getInstanceStrong().nextBytes(rnd);
         return rnd;
     }
     
     /**
-     * 
-     * @param data     
-     * @param bitLength     
-     * @return      
+     * Hash Given Data using Keccak512 taking only the Required Bits.
+     * @param data Data to be Hashed.
+     * @param bitLength Required Bit Length.
+     * @return Hashed Byte Array.
      */
     public static byte[] getHashDigest(byte[] data, double bitLength) {
         int byteLength = (int) (Math.ceil(bitLength/8));

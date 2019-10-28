@@ -7,7 +7,7 @@ import org.bouncycastle.pqc.math.linearalgebra.GF2mField;
 import org.bouncycastle.util.encoders.Hex;
 
 /**
- *
+ * Util Fucntions Class.
  * @author Eduardo Angulo
  * @author Sebastián Cabarcas
  * @author Andrés Duarte
@@ -119,9 +119,9 @@ public class Functions {
     }
     
     /**
-     * 
-     * @param data     
-     * @return      
+     * Transform a Byte Array to a Integer Array over GF(2^r).
+     * @param data Byte Array to be transformed.
+     * @return Transformed Integer Array over GF(2^r).
      */
     public static int[][] bytesToFieldVector(byte[] data) {
         int[][] result = new int[data.length][1];
@@ -139,11 +139,11 @@ public class Functions {
     }
     
     /**
-     * 
-     * @param row
-     * @param column
-     * @param value
-     * @return 
+     * Generates a Integer Matrix of same value.
+     * @param row Row Length.
+     * @param column Column Length.
+     * @param value Matrix Value.
+     * @return Matrix filled with value.
      */
     public static int[][] sameValueMatrix(int row, int column, int value) {
         int[][] result = new int[row][column];
@@ -154,9 +154,9 @@ public class Functions {
     }
     
     /**
-     * 
-     * @param dim
-     * @return 
+     * Generates a Identity Matrix.
+     * @param dim Dimension of the Matrix.
+     * @return Identity Matrix of (dim x dim).
      */
     public static int[][] identityMatrix(int dim) {
         int[][] result = new int[dim][dim];
@@ -167,10 +167,10 @@ public class Functions {
     }
     
     /**
-     * 
-     * @param mat1
-     * @param mat2
-     * @return 
+     * Join the Rows of Two Matrix into a new one. 
+     * @param mat1 First Matrix.
+     * @param mat2 Second Matrix.
+     * @return Union Matrix.
      */
     public static int[][] matrixRowUnion(int[][] mat1, int[][] mat2) {
         int row1 = mat1.length;
@@ -187,10 +187,10 @@ public class Functions {
     }
     
     /**
-     * 
-     * @param mat1
-     * @param mat2
-     * @return 
+     * Join the Columns of Two Matrix into a new one.
+     * @param mat1 First Matrix.
+     * @param mat2 Second Matrix.
+     * @return Union Matrix.
      */
     public static int[][] matrixColumnUnion(int[][] mat1, int[][] mat2) {
         int row = mat1.length;
@@ -204,10 +204,10 @@ public class Functions {
     }
     
     /**
-     * 
-     * @param vec1
-     * @param vec2
-     * @return 
+     * Concatenates Two Integer Vectors into a new one.
+     * @param vec1 First Vector.
+     * @param vec2 Second Vector.
+     * @return Union Vector.
      */
     public static int[] concatenateVectors(int[] vec1, int[] vec2) {
         int[] result = new int[vec1.length + vec2.length];
@@ -217,10 +217,10 @@ public class Functions {
     }
     
     /**
-     * 
-     * @param vec1
-     * @param vec2
-     * @return 
+     * Concatenates Two Byte Vectors into a new one.
+     * @param vec1 First Vector.
+     * @param vec2 Second Vector.
+     * @return Union Vector.
      */
     public static byte[] concatenateVectors(byte[] vec1, byte[] vec2) {
         byte[] result = new byte[vec1.length + vec2.length];
@@ -230,10 +230,10 @@ public class Functions {
     }
     
     /**
-     * 
-     * @param mat1     
-     * @param mat2     
-     * @return      
+     * Verify if Two Matrix are Equals.
+     * @param mat1 First Matrix.
+     * @param mat2 Second Matrix.
+     * @return mat1 == mat2 ?
      */
     public static boolean matrixEquals(int[][] mat1, int[][] mat2) {
         if(!(mat1.length == mat2.length && mat1[0].length == mat2[0].length)) {
@@ -250,12 +250,12 @@ public class Functions {
     }
     
     /**
-     * 
-     * @param degree     
-     * @param poly     
-     * @param A     
-     * @param b     
-     * @return      
+     * Solve a Linear (m x m) Equation System over GF(2^r).
+     * @param degree GF Degree.
+     * @param poly Irreducible Polynomial of GF.
+     * @param A Coeficient Matrix of Equation System.
+     * @param b Constant Vector of Equation System.
+     * @return Equation System Solution or Null if Equation System don't have Solution.
      */
     public static int[] gaussianElimination(int degree, int poly, int[][] A, int[] b) {
         ComputeGaussian cg = new ComputeGaussian(degree, poly);
@@ -263,11 +263,11 @@ public class Functions {
     }
     
     /**
-     * 
-     * @param degree     
-     * @param poly     
+     * Invert the Given Matrix over GF(2^r).
+     * @param degree GF Degree.
+     * @param poly Irreducible Polynomial of GF.
      * @param A Matrix to be inverted.
-     * @return      
+     * @return Inverted Matrix over GF(2^r).
      */
     public static int[][] invertMatrix(int degree, int poly, int[][] A) {
         ComputeInverse ci = new ComputeInverse(degree, poly);
@@ -275,9 +275,9 @@ public class Functions {
     }
     
     /**
-     * 
-     * @param A
-     * @return 
+     * Gets the Coeficient Matrix of a Equation System from Augmented Matrix.
+     * @param A Augmented Matrix.
+     * @return Coeficient Matrix of Equation System.
      */
     public static int[][] equationCoeficients(int[][] A) {
         int[][] B = new int[A.length][A.length];
@@ -288,9 +288,9 @@ public class Functions {
     }
     
     /**
-     * 
-     * @param A
-     * @return 
+     * Gets the Constant Vector of a Equation System from Augmented Matrix.
+     * @param A Augmented Matrix.
+     * @return Constant Vector of Equation System.
      */
     public static int[] equationConstants(int[][] A) {
         int[] b = new int[A.length];
