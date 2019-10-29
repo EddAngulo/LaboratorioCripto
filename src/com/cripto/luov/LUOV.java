@@ -97,6 +97,7 @@ public class LUOV {
      * <p>
      * public_seed = Des_k1(k2)||Des_k2(k4)||Des_k3(k1)||Des_k4(k3)
      * being ki = private_seed[8*i:8*(i+1)].
+     * </p>
      * @param private_seed Private seed of LUOV cryptosystem.
      * @return Hex String corresponding to the Public Seed.
      * @throws java.lang.Exception 
@@ -474,6 +475,68 @@ public class LUOV {
         signResult.add(Pack.pack(s));
         signResult.add(Hex.toHexString(salt));
         return signResult;
+    }
+    
+    /**
+     * Calculates the Evaluation of s in the Public Map P.
+     * <p>
+     * For a Given Signature s, calculates P(s) = C + L(s) + Q(s), 
+     * with Q = (Q1||Q2).
+     * </p>
+     * @param C Hex String of C Matrix.
+     * @param L Hex String of L Matrix.
+     * @param Q1 Hex String of Q1 Matrix.
+     * @param Q2 Hex String of Q2 Matrix.
+     * @param s Hex String of s Signature Matrix.
+     * @return Evaluation of s in the Public Map P, i.e. P(s).
+     */
+    private int[][] evaluatePublicMap(String C, String L, String Q1, String Q2, String s) {
+        int N = OIL_VAR + VINEGAR_VAR;
+        int[][] C_matrix = Pack.unpack(C, OIL_VAR, 1);
+        int[][] L_matrix = Pack.unpack(L, OIL_VAR, N);
+        int[][] Q1_matrix = Pack.unpack(Q1, OIL_VAR, 
+                (VINEGAR_VAR*(VINEGAR_VAR + 1)/2) + (VINEGAR_VAR * OIL_VAR));
+        int[][] Q2_matrix = Pack.unpack(Q2, OIL_VAR, OIL_VAR*(OIL_VAR + 1)/2);
+        int[][] Q = Functions.matrixColumnUnion(Q1_matrix, Q2_matrix);
+        int[][] s_matrix = Pack.unpack(s, N, 1);
+        int[][] e = Functions.matrixAdd(C_matrix, 
+                Functions.matrixMult(FIELD, POLY, L_matrix, s_matrix));
+        int column = 0;
+        for (int i = 0; i < N; i++) {
+            for (int j = i; j < N; j++) {
+                for (int k = 0; k < OIL_VAR; k++) {
+                    e[k][0] = Functions.XOR(e[k][0], 
+                            Functions.fieldMult(FIELD, POLY, 
+                                    Functions.fieldMult(FIELD, POLY, 
+                                            Q[k][column], s_matrix[i][0]), 
+                                    s_matrix[j][0]));
+                }
+                column++;
+            }
+        }
+        return e;
+    }
+    
+    /**
+     * Verify if a Signature (s, salt) is Valid for a Message M.
+     * <p>
+     * For a signature (s, salt) verify if the Public Map (P) evaluated in s is
+     * equal to Hashed Message M, i.e. P(s) == [h = Hash(M||0x00||salt)].
+     * </p>
+     * @param M Message to be Verified.
+     * @param sign Sign to be Verified.
+     * @return Verification of a Signature P(s) == h.
+     * @throws java.lang.Exception     
+     */
+    public boolean verify(String M, ArrayList<String> sign) throws Exception {
+        byte[] zero = {0};
+        byte[] salt = Hex.decode(sign.get(1));
+        byte[] finalMsg = Functions.concatenateVectors(
+                Functions.concatenateVectors(M.getBytes(), zero), salt);
+        byte[] hashedMsg = PRNG.getHashDigest(finalMsg, FIELD*OIL_VAR); 
+        int[][] h = buildMessageVector(hashedMsg);
+        int[][] e = evaluatePublicMap(C, L, Q1, Q2, sign.get(0));
+        return Functions.matrixEquals(e, h);
     }
     
 }

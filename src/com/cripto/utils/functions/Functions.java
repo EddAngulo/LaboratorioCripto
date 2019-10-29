@@ -40,6 +40,19 @@ public class Functions {
     }
     
     /**
+     * Calculates the Multiplication of 2 Elements of GF(2^r).
+     * @param r Degree of Galois Field.
+     * @param poly Irreducible Polynomial of Galois Field.
+     * @param a First Field Element to be Multiplied.
+     * @param b Second Field Element to be Multiplied.
+     * @return Multiplication: (a * b) mod poly.
+     */
+    public static int fieldMult(int r, int poly, int a, int b) {
+        GF2mField field = new GF2mField(r, poly);
+        return field.mult(a, b);
+    }
+    
+    /**
      * Calculates Matrix XOR Add over GF(2^r).
      * @param mat1 First Matrix.
      * @param mat2 Second Matrix.
@@ -57,8 +70,8 @@ public class Functions {
     
     /**
      * Calculates Matrix multiplication over GF(2^r).
-     * @param r Degree of Galois Field
-     * @param poly Irreducible Polynomial
+     * @param r Degree of Galois Field.
+     * @param poly Irreducible Polynomial of Galois Field.
      * @param mat1 First Matrix.
      * @param mat2 Second Matrix.
      * @return Result Matrix.
@@ -251,8 +264,8 @@ public class Functions {
     
     /**
      * Solve a Linear (m x m) Equation System over GF(2^r).
-     * @param degree GF Degree.
-     * @param poly Irreducible Polynomial of GF.
+     * @param degree Galois Field Degree.
+     * @param poly Irreducible Polynomial of Galois Field.
      * @param A Coeficient Matrix of Equation System.
      * @param b Constant Vector of Equation System.
      * @return Equation System Solution or Null if Equation System don't have Solution.
@@ -264,8 +277,8 @@ public class Functions {
     
     /**
      * Invert the Given Matrix over GF(2^r).
-     * @param degree GF Degree.
-     * @param poly Irreducible Polynomial of GF.
+     * @param degree Galois Field Degree.
+     * @param poly Irreducible Polynomial of Galois Field.
      * @param A Matrix to be inverted.
      * @return Inverted Matrix over GF(2^r).
      */

@@ -4,6 +4,7 @@ package com.cripto.main;
 import com.cripto.luov.LUOV;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 
 /**
  * Main Class.
@@ -25,7 +26,11 @@ public class Main {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         System.out.print("Message to be Signed: ");
         String messageToBeSigned = br.readLine();
-        System.out.println("Signed Message: " + luov.sign(messageToBeSigned));
+        ArrayList<String> sign = luov.sign(messageToBeSigned);
+        //System.out.println("Signed Message: " + sign);
+        System.out.print("Message to be Verified: ");
+        String messageToBeVerified = br.readLine();
+        System.out.println("Valid Message Signature: " + luov.verify(messageToBeVerified, sign));
     }
     
 }
