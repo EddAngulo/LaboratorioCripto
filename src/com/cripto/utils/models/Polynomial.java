@@ -1,5 +1,5 @@
 
-package com.cripto.utils;
+package com.cripto.utils.models;
 
 /**
  * Polynomial Representation Abstract Class.

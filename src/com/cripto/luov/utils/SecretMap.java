@@ -1,6 +1,8 @@
 
-package com.cripto.luov;
+package com.cripto.luov.utils;
 
+import com.cripto.luov.LUOV;
+import com.cripto.luov.utils.SecretPolynomial;
 import com.cripto.utils.functions.Functions;
 import java.util.ArrayList;
 

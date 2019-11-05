@@ -1,7 +1,7 @@
 
-package com.cripto.luov;
+package com.cripto.luov.utils;
 
-import com.cripto.utils.Polynomial;
+import com.cripto.utils.models.Polynomial;
 
 /**
  * Secret Polynomial Class.

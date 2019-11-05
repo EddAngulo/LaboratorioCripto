@@ -2,9 +2,9 @@
 package com.cripto.main;
 
 import com.cripto.luov.LUOV;
+import com.cripto.luov.utils.Signature;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
 
 /**
  * Main Class.
@@ -26,11 +26,13 @@ public class Main {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         System.out.print("Message to be Signed: ");
         String messageToBeSigned = br.readLine();
-        ArrayList<String> sign = luov.sign(messageToBeSigned);
-        //System.out.println("Signed Message: " + sign);
+        Signature sign = luov.sign(messageToBeSigned);
+        //System.out.println("Signed Message: " + sign.toString());
         System.out.print("Message to be Verified: ");
         String messageToBeVerified = br.readLine();
-        System.out.println("Valid Message Signature: " + luov.verify(messageToBeVerified, sign));
+        //Signature wrongSign = new Signature(sign.getS(), "00000000000000000000000000000000");
+        System.out.println("Valid Message Signature: " + 
+                luov.verify(luov.publicKey, messageToBeVerified, sign));
     }
     
 }
